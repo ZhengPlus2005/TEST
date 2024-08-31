@@ -3,20 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>二进制代码雨</title>
+    <title>可交互的黑客帝国代码雨</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             background-color: black;
+            font-family: Arial, sans-serif;
         }
         canvas {
             display: block;
+        }
+        #controls {
+            position: fixed;
+            left: 10px;
+            bottom: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: #0F0;
+        }
+        #controls button, #controls select {
+            margin: 5px;
+            padding: 5px;
+            background-color: #0F0;
+            color: black;
+            border: none;
+            cursor: pointer;
+        }
+        #controls input[type="color"] {
+            vertical-align: middle;
         }
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
+    <div id="controls">
+        <button id="speedDown">速度-</button>
+        <button id="speedUp">速度+</button>
+        <input type="color" id="colorPicker" value="#00FF00">
+        <button id="fontSizeDown">字体-</button>
+        <button id="fontSizeUp">字体+</button>
+        <select id="charType">
+            <option value="binary">0-1</option>
+            <option value="decimal">0-9</option>
+            <option value="alphanumeric">字母和数字</option>
+            <option value="alpha">仅字母</option>
+            <option value="chinese">仅汉字</option>
+        </select>
+    </div>
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -24,27 +59,43 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        const fontSize = 16;
-        const columns = canvas.width / fontSize;
+        let fontSize = 16;
+        let columns = canvas.width / fontSize;
+        let drops = [];
+        let speed = 33;
+        let color = '#0F0';
+        let charType = 'binary';
 
-        const drops = [];
+        const chinese = "田由甲申甴电甶男甸甹町画甼甽甾甿畀畁畂畃畄畅畆畇畈畉畊畋界畍畎畏畐畑";
+
         for (let i = 0; i < columns; i++) {
             drops[i] = 1;
         }
 
-        function getRandomBinary(length) {
-            return Array.from({length}, () => Math.round(Math.random())).join('');
+        function getRandomChar() {
+            switch(charType) {
+                case 'binary':
+                    return Math.round(Math.random()).toString();
+                case 'decimal':
+                    return Math.floor(Math.random() * 10).toString();
+                case 'alphanumeric':
+                    return Math.random().toString(36).substring(2, 3);
+                case 'alpha':
+                    return String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+                case 'chinese':
+                    return chinese[Math.floor(Math.random() * chinese.length)];
+            }
         }
 
         function draw() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.fillStyle = '#0F0';
+            ctx.fillStyle = color;
             ctx.font = fontSize + 'px monospace';
 
             for (let i = 0; i < drops.length; i++) {
-                const text = getRandomBinary(1);  // 每次只生成一个字符
+                const text = getRandomChar();
                 ctx.fillText(text, i * fontSize, drops[i] * fontSize);
 
                 if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
@@ -54,11 +105,46 @@
             }
         }
 
-        setInterval(draw, 33);
+        let interval = setInterval(draw, speed);
+
+        // 控制函数
+        document.getElementById('speedDown').onclick = () => {
+            clearInterval(interval);
+            speed += 10;
+            interval = setInterval(draw, speed);
+        };
+
+        document.getElementById('speedUp').onclick = () => {
+            clearInterval(interval);
+            speed = Math.max(10, speed - 10);
+            interval = setInterval(draw, speed);
+        };
+
+        document.getElementById('colorPicker').onchange = (e) => {
+            color = e.target.value;
+        };
+
+        document.getElementById('fontSizeDown').onclick = () => {
+            fontSize = Math.max(8, fontSize - 2);
+            columns = canvas.width / fontSize;
+            drops = Array(Math.ceil(columns)).fill(1);
+        };
+
+        document.getElementById('fontSizeUp').onclick = () => {
+            fontSize += 2;
+            columns = canvas.width / fontSize;
+            drops = Array(Math.ceil(columns)).fill(1);
+        };
+
+        document.getElementById('charType').onchange = (e) => {
+            charType = e.target.value;
+        };
 
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            columns = canvas.width / fontSize;
+            drops = Array(Math.ceil(columns)).fill(1);
         });
     </script>
 </body>
