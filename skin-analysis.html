@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>肤色分析工具</title>
+    <title>皮肤晒黑程度分析</title>
     <meta name="description" content="一个通过计算晒前和晒后皮肤色块的亮度差异来分析和比较肤色变化的工具,使用K-means聚类算法。">
     <style>
         body {
@@ -50,8 +50,8 @@
     <button onclick="analyzeTan()">分析肤色变化</button>
 
     <div class="preview-container">
-        <img id="preTanPreview" class="preview-image" alt="晒前预览">
-        <img id="postTanPreview" class="preview-image" alt="晒后预览">
+        <img id="preTanPreview" class="preview-image" alt="预览窗">
+        <img id="postTanPreview" class="preview-image" alt="预览窗">
     </div>
 
     <canvas id="canvasPreTan"></canvas>
@@ -99,7 +99,7 @@
             const preTanFile = document.getElementById('preTan').files[0];
             const postTanFile = document.getElementById('postTan').files[0];
             if (!preTanFile || !postTanFile) {
-                alert('请上传两张图片。');
+                alert('请上传两张图片');
                 return;
             }
 
