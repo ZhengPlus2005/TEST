@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机食堂窗口选择器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>随机食堂窗口选择器</h1>
+        <button onclick="randomSelect()">开始</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function randomSelect() {
+            const firstNumber = Math.floor(Math.random() * 2) + 1;
+            let secondNumber;
+            
+            if (firstNumber === 1) {
+                secondNumber = Math.floor(Math.random() * 35) + 1;
+            } else {
+                secondNumber = Math.floor(Math.random() * 28) + 2;
+            }
+            
+            document.getElementById('result').innerHTML = `这次吃${firstNumber}楼${secondNumber}号窗口。`;
+        }
+    </script>
+</body>
+</html>
