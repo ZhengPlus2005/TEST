@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分贝仪</title>
+<meta name="description" content="一个简单的分贝仪，可以实时测量环境中的噪声分贝级别。">
+<style>
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #ffffff;
+}
+
+h1 {
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+#currentDecibel {
+    font-size: 72px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+#minDecibel, #maxDecibel {
+    font-size: 24px;
+    margin: 5px 20px;
+    color: #666;
+}
+
+#decibelContainer {
+    display: flex;
+    align-items: center;
+}
+
+#chartContainer {
+    width: 90%;
+    height: 200px;
+    margin-top: 20px;
+    background-color: #f4f4f4;
+    border-radius: 10px;
+    position: relative;
+}
+
+#chartCanvas {
+    width: 100%;
+    height: 100%;
+}
+</style>
+</head>
+<body>
+<h1>分贝仪</h1>
+<div id="currentDecibel">0 dB</div>
+<div id="decibelContainer">
+    <div id="minDecibel">最低分贝: 0 dB</div>
+    <div id="maxDecibel">最高分贝: 0 dB</div>
+</div>
+<div id="chartContainer">
+    <canvas id="chartCanvas"></canvas>
+</div>
+<script>
+const currentDecibel = document.getElementById('currentDecibel');
+const minDecibel = document.getElementById('minDecibel');
+const maxDecibel = document.getElementById('maxDecibel');
+const chartCanvas = document.getElementById('chartCanvas');
+const ctx = chartCanvas.getContext('2d');
+
+let minValue = Infinity;
+let maxValue = -Infinity;
+let decibelHistory = [];
+
+function updateDecibelMeter(value) {
+    currentDecibel.textContent = value.toFixed(0) + ' dB';
+    if (value < minValue && value !== -Infinity) {
+        minValue = value;
+        minDecibel.textContent = '最低分贝: ' + value.toFixed(0) + ' dB';
+    }
+    if (value > maxValue) {
+        maxValue = value;
+        maxDecibel.textContent = '最高分贝: ' + value.toFixed(0) + ' dB';
+    }
+    decibelHistory.push(value);
+    if (decibelHistory.length > 100) {
+        decibelHistory.shift();
+    }
+    drawChart();
+}
+
+function calculateDecibels(micLevel) {
+    if (micLevel <= 0) {
+        return -Infinity;  // Avoid log(0) issues
+    }
+    return 20 * Math.log10(micLevel);
+}
+
+function drawChart() {
+    ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+    ctx.beginPath();
+    ctx.moveTo(0, chartCanvas.height - decibelHistory[0]);
+
+    for (let i = 1; i < decibelHistory.length; i++) {
+        const x = (i / decibelHistory.length) * chartCanvas.width;
+        const y = chartCanvas.height - decibelHistory[i];
+        ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = '#333';
+    ctx.stroke();
+}
+
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioContext.createAnalyser();
+            const microphone = audioContext.createMediaStreamSource(stream);
+            const scriptProcessor = audioContext.createScriptProcessor(256, 1, 1);
+
+            analyser.smoothingTimeConstant = 0.8;
+            analyser.fftSize = 256;
+
+            microphone.connect(analyser);
+            analyser.connect(scriptProcessor);
+            scriptProcessor.connect(audioContext.destination);
+            scriptProcessor.onaudioprocess = function() {
+                const array = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(array);
+                const micLevel = array.reduce((a, b) => a + b) / array.length;
+                const decibels = calculateDecibels(micLevel / 255);
+                if (decibels !== -Infinity) {
+                    updateDecibelMeter(decibels + 60); // Adjusted for perceived loudness
+                }
+            };
+        })
+        .catch(function(err) {
+            console.error('Error accessing microphone: ' + err);
+        });
+} else {
+    console.error('您的浏览器不支持访问麦克风。');
+}
+</script>
+
+</body>
+</html>
