@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公式渲染</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>公式渲染</h1>
+    <textarea id="input" placeholder="在此输入文本和LaTeX公式..."></textarea>
+    <button onclick="renderMath()">渲染公式</button>
+    <div id="output"></div>
+
+    <script>
+        function renderMath() {
+            var input = document.getElementById('input').value;
+            var output = document.getElementById('output');
+            output.innerHTML = input;
+            MathJax.typesetPromise([output]).then(() => {
+                console.log('公式渲染完成');
+            });
+        }
+    </script>
+</body>
+</html>
