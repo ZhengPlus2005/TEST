@@ -4,7 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>公式渲染</title>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            }
+        };
+    </script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         body {
@@ -31,9 +41,17 @@
         function renderMath() {
             var input = document.getElementById('input').value;
             var output = document.getElementById('output');
-            output.innerHTML = input;
+
+            // 先将 Markdown 转成 HTML，保留标题、段落等结构
+            var html = marked.parse(input, { gfm: true, breaks: true });
+            output.innerHTML = html;
+
+            // 重复渲染时先清理上一次的 MathJax 状态，再进行排版
+            if (window.MathJax && window.MathJax.typesetClear) {
+                window.MathJax.typesetClear([output]);
+            }
             MathJax.typesetPromise([output]).then(() => {
-                console.log('公式渲染完成');
+                console.log('Markdown 与公式渲染完成');
             });
         }
     </script>
