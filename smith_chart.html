@@ -258,7 +258,7 @@
 <body>
 	<div class="wrap">
 		<aside class="panel">
-			<h1>史密斯圆图快速读图工具 V1.0</h1>
+			<h1>史密斯圆图快速读图工具 V1.3</h1>
 
 			<fieldset>
 				<legend>1) 初始化：输入阻抗 ZL</legend>
@@ -276,7 +276,7 @@
 			<div id="axisRReadout" class="readout">第一功能的辅助读数结果将在此显示。</div>
 
 			<fieldset>
-				<legend>2) 普通计算：按波长旋转得到 Z1/Y1</legend>
+				<legend>2) 普通计算：按给定波长旋转</legend>
 				<label>
 					旋转基准点
 					<select id="rotateBasePoint">
@@ -292,7 +292,7 @@
 					</select>
 				</label>
 				<label>
-					波长数 λ（超过0.5自动取余）
+					波长数 λ
 					<input id="lambdaInput" type="number" min="0" step="0.001" value="0.08" />
 				</label>
 				<button id="rotateBtn" class="secondary">旋转并标注</button>
@@ -300,21 +300,21 @@
 			<div id="rotateReadout" class="readout">第二功能的 Z1/Y1 结果将在此显示。</div>
 
 			<fieldset>
-				<legend>3)单支节求解：求解Y2/Y2'并将支节位置和长度直接求出</legend>
+				<legend>3)单支节求解：求解短路支节位置和长度</legend>
 				<button id="calcY2Btn" class="secondary">计算并标注 Y2, Y2'</button>
 			</fieldset>
 			<div id="y2Readout" class="readout">第三功能的 Y2/Y2' 结果将在此显示。</div>
 
 			<fieldset>
-				<legend>4) 双支节求解：求解YL', Y3, Y4和支节长度</legend>
+				<legend>4) 双支节求解：求解相距λ/8的短路支节长度</legend>
 				<div class="row">
 					<label>
-						第一支节距离 d1
-						<input id="d1Input" type="number" min="0" step="0.001" value="0.125" />
+						第一支节距负载 d1
+						<input id="d1Input" type="number" min="0" value="0.125" />
 					</label>
 					<label>
-						第二支节距离 d2
-						<input id="d2Input" type="number" min="0" step="0.001" value="0.125" />
+						两支节间距 d2
+						<input id="d2Input" type="number" value="0.125" readonly disabled />
 					</label>
 				</div>
 				<label>
@@ -865,7 +865,6 @@
 			const signY2 = y2.im >= 0 ? "+" : "-";
 			const signY2p = y2p.im >= 0 ? "+" : "-";
 			const lines = [
-				"Y2/Y2' 读数",
 				`Y2 = <strong>1.0000</strong> ${signY2} j${strongNum(Math.abs(y2.im), 4)}，向电源波长数${strongNum(pairY2.towardGenerator, 3)}`,
 				`Y2' = <strong>1.0000</strong> ${signY2p} j${strongNum(Math.abs(y2p.im), 4)}，向电源波长数${strongNum(pairY2p.towardGenerator, 3)}`,
 				`<u>支节位置求得d=${strongNum(d, 3)}，d'=${strongNum(dp, 3)}</u>`,
@@ -884,9 +883,9 @@
 			}
 
 			const d1 = Number(d1Input.value);
-			const d2 = Number(d2Input.value);
-			if (!Number.isFinite(d1) || d1 < 0 || !Number.isFinite(d2) || d2 < 0) {
-				setStatus("d1 和 d2 都需要是非负数。", true);
+			const d2 = 0.125;
+			if (!Number.isFinite(d1) || d1 < 0) {
+				setStatus("d1 需要是非负数。", true);
 				return;
 			}
 
@@ -905,7 +904,6 @@
 			if (candidates.length === 0) {
 				state.dual = null;
 				dualStubReadoutEl.innerHTML = [
-					"双支节求解",
 					`YL' = ${formatComplexBold(ylp)}`,
 					`YL' 向电源波长数 = ${strongNum(pairYlp.towardGenerator, 3)}`,
 					"禁区无交点"
