@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>史密斯圆图阻抗圆图快速读图工具</title>
+	<style>
+		:root {
+			--bg1: #f6f7fb;
+			--bg2: #e8edf7;
+			--panel: #ffffffd9;
+			--ink: #20242c;
+			--muted: #5f6b7a;
+			--accent: #0057b8;
+			--accent2: #0d7f6f;
+			--warn: #b34700;
+			--ring: #8ca3c7;
+			--aux: #d96d00;
+			--grid: #a6b6cc;
+			--point-z: #ff0000;
+			--point-y: #ec4899;
+			--point-rot: #9a031e;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+			color: var(--ink);
+			background:
+				radial-gradient(1200px 600px at 20% -10%, #ffffff 0%, #ffffff00 70%),
+				radial-gradient(900px 450px at 100% 110%, #dce7fa 0%, #dce7fa00 70%),
+				linear-gradient(160deg, var(--bg1), var(--bg2));
+			min-height: 100vh;
+			padding: 20px;
+		}
+
+		.wrap {
+			max-width: 1280px;
+			margin: 0 auto;
+			display: grid;
+			grid-template-columns: 360px 1fr;
+			gap: 18px;
+		}
+
+		.panel,
+		.chart-card {
+			background: var(--panel);
+			backdrop-filter: blur(4px);
+			border: 1px solid #ffffff;
+			border-radius: 14px;
+			box-shadow: 0 10px 26px #4b5d7a1a;
+		}
+
+		.panel {
+			padding: 16px;
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+
+		h1 {
+			margin: 0;
+			font-size: 20px;
+			line-height: 1.3;
+		}
+
+		.sub {
+			margin: 0;
+			color: var(--muted);
+			font-size: 13px;
+		}
+
+		fieldset {
+			border: 1px solid #dde5f3;
+			border-radius: 10px;
+			padding: 10px;
+			margin: 0;
+			display: grid;
+			gap: 8px;
+		}
+
+		legend {
+			padding: 0 6px;
+			font-weight: 600;
+			color: #2d3748;
+			font-size: 13px;
+		}
+
+		label {
+			font-size: 12px;
+			color: var(--muted);
+			display: grid;
+			gap: 4px;
+		}
+
+		input[type="text"],
+		select,
+		input[type="number"] {
+			width: 100%;
+			padding: 8px 9px;
+			border-radius: 8px;
+			border: 1px solid #c7d4ea;
+			background: #fff;
+			color: #1f2937;
+			font-size: 14px;
+			outline: none;
+		}
+
+		input:focus {
+			border-color: var(--accent);
+			box-shadow: 0 0 0 3px #0057b81f;
+		}
+
+		.row {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 8px;
+		}
+
+		.zl-inline {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			font-size: 13px;
+			color: #334155;
+		}
+
+		.zl-inline input[type="number"] {
+			width: 96px;
+			padding: 7px 8px;
+		}
+
+		button {
+			border: none;
+			border-radius: 8px;
+			padding: 9px 10px;
+			font-weight: 600;
+			color: white;
+			background: linear-gradient(135deg, var(--accent), #0074d4);
+			cursor: pointer;
+		}
+
+		button.secondary {
+			background: linear-gradient(135deg, var(--accent), #0074d4);
+		}
+
+		button.warn {
+			background: linear-gradient(135deg, var(--accent), #0074d4);
+		}
+
+		.check {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			color: #334155;
+			font-size: 13px;
+		}
+
+		.status {
+			font-size: 13px;
+			padding: 8px;
+			border-radius: 8px;
+			background: #edf4ff;
+			color: #1e3a8a;
+			border: 1px solid #bfd2ff;
+			min-height: 36px;
+		}
+
+		.readout {
+			font-size: 12px;
+			line-height: 1.5;
+			color: #1f2937;
+			background: #f8fbff;
+			border: 1px solid #dbe8ff;
+			border-radius: 8px;
+			padding: 8px;
+			white-space: pre-line;
+		}
+
+		.chart-card {
+			padding: 12px;
+			position: relative;
+		}
+
+		svg {
+			width: 100%;
+			height: min(78vh, 820px);
+			display: block;
+			border-radius: 10px;
+			background: radial-gradient(circle at 50% 45%, #ffffff 0%, #eef4ff 90%);
+		}
+
+		.legend {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 10px;
+			margin-top: 10px;
+			font-size: 12px;
+			color: #334155;
+		}
+
+		.chart-note {
+			margin-top: 10px;
+			padding: 10px;
+			font-size: 12px;
+			line-height: 1.6;
+			color: #334155;
+			background: #f8fbff;
+			border: 1px solid #dbe8ff;
+			border-radius: 8px;
+		}
+
+		.author-note {
+			margin-top: 10px;
+			font-size: 12px;
+			color: #64748b;
+			text-align: right;
+		}
+
+		.chart-actions {
+			margin-top: 10px;
+			display: flex;
+			justify-content: flex-end;
+		}
+
+		.download-btn-floating {
+			position: absolute;
+			top: 14px;
+			right: 14px;
+			z-index: 3;
+			padding: 7px 10px;
+			font-size: 12px;
+		}
+
+		.dot {
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+			display: inline-block;
+			margin-right: 5px;
+			vertical-align: -1px;
+		}
+
+		@media (max-width: 980px) {
+			.wrap {
+				grid-template-columns: 1fr;
+			}
+			svg {
+				height: min(70vh, 620px);
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="wrap">
+		<aside class="panel">
+			<h1>史密斯圆图快速读图工具 V1.0</h1>
+
+			<fieldset>
+				<legend>1) 初始化：输入阻抗 ZL</legend>
+				<label>归一化输入格式</label>
+				<div class="zl-inline">
+					<span>ZL =</span>
+					<input id="zlReInput" type="number" value="2" />
+					<span>+ j</span>
+					<input id="zlImInput" type="number" value="1" />
+				</div>
+				<button id="setZlBtn">转换为YL并读出波长</button>
+			</fieldset>
+
+			<div id="readout" class="readout">第一功能的主读数结果将在此显示。</div>
+			<div id="axisRReadout" class="readout">第一功能的辅助读数结果将在此显示。</div>
+
+			<fieldset>
+				<legend>2) 普通计算：按波长旋转得到 Z1/Y1</legend>
+				<label>
+					旋转基准点
+					<select id="rotateBasePoint">
+						<option value="ZL" selected>从 ZL 出发</option>
+						<option value="YL">从 YL 出发</option>
+					</select>
+				</label>
+				<label>
+					旋转方向
+					<select id="rotateDirection">
+						<option value="towardSource" selected>向电源（顺时针）</option>
+						<option value="towardLoad">向负载（逆时针）</option>
+					</select>
+				</label>
+				<label>
+					波长数 λ（超过0.5自动取余）
+					<input id="lambdaInput" type="number" min="0" step="0.001" value="0.08" />
+				</label>
+				<button id="rotateBtn" class="secondary">旋转并标注</button>
+			</fieldset>
+			<div id="rotateReadout" class="readout">第二功能的 Z1/Y1 结果将在此显示。</div>
+
+			<fieldset>
+				<legend>3)单支节求解：作等Γ圆与g=1圆交点Y2/Y2'</legend>
+				<button id="calcY2Btn" class="secondary">计算并标注 Y2, Y2'</button>
+			</fieldset>
+			<div id="y2Readout" class="readout">第三功能的 Y2/Y2' 结果将在此显示。</div>
+
+			<fieldset>
+				<legend>4) 双支节求解：求解YL', Y3, Y4和支节长度</legend>
+				<div class="row">
+					<label>
+						第一枝节距离 d1（波长）
+						<input id="d1Input" type="number" min="0" step="0.001" value="0.125" />
+					</label>
+					<label>
+						第二枝节距离 d2（波长）
+						<input id="d2Input" type="number" min="0" step="0.001" value="0.125" />
+					</label>
+				</div>
+				<label>
+					YL' 到 Y3 行进方向
+					<select id="y3WalkDirection">
+						<option value="ccw" selected>逆时针</option>
+						<option value="cw">顺时针</option>
+					</select>
+				</label>
+				<label class="sub">辅助圆固定为 x^2 + (y - 0.5)^2 = 0.5^2</label>
+				<button id="solveDualStubBtn" class="warn">计算并标注YL', Y3, Y4</button>
+			</fieldset>
+			<div id="dualStubReadout" class="readout">第四功能的双支节求解结果将在此显示。</div>
+
+			<div id="status" class="status">准备就绪。输入参数后可查看对应读数与图形标注。</div>
+		</aside>
+
+		<section class="chart-card">
+			<button id="downloadChartBtn" class="secondary download-btn-floating">下载图片（PNG）</button>
+			<svg id="chart" viewBox="0 0 1000 1000" aria-label="Smith chart"></svg>
+			<div class="legend" id="chartLegend" style="display:none;">
+				<span id="legend-zl"><i class="dot" style="background: var(--point-z);"></i>ZL 点</span>
+				<span id="legend-yl"><i class="dot" style="background: var(--point-y);"></i>YL 点</span>
+				<span id="legend-z1"><i class="dot" style="background: var(--point-rot);"></i>Z1 点</span>
+				<span id="legend-y2"><i class="dot" style="background: #7c3aed;"></i>Y2 点</span>
+				<span id="legend-y2p"><i class="dot" style="background: #7c3aed;"></i>Y2' 点</span>
+				<span id="legend-ylp"><i class="dot" style="background: #6b7280;"></i>YL' 点</span>
+				<span id="legend-y3"><i class="dot" style="background: #c2410c;"></i>Y3 点</span>
+				<span id="legend-y4"><i class="dot" style="background: #f97316;"></i>Y4 点</span>
+			</div>
+			<div class="chart-note"><b>开发背景：</b>史密斯圆图使用经典的尺规作图配合观察法读图存在速度慢、精度低的困难，本工具基于微波技术基础给出了一个快速读史密斯圆图的方案，特点是速度快、精度高。<br><b>功能简介：</b>本工具提供了四种主要功能，包括阻抗导纳转换、阻抗点旋转、单支节求解和双支节求解。<br><b>注意事项：</b>本算法通过数值法计算并在圆图上标出，若你的读数与此不符，一定是你读的不准。另外为了清除之前计算的内容，请刷新。</div>
+			<div class="author-note">© 2026 ZhengPlus丨保留所有权利</div>
+		</section>
+	</div>
+
+	<script>
+		const svg = document.getElementById("chart");
+		const statusEl = document.getElementById("status");
+		const readoutEl = document.getElementById("readout");
+		const axisRReadoutEl = document.getElementById("axisRReadout");
+		const rotateReadoutEl = document.getElementById("rotateReadout");
+		const y2ReadoutEl = document.getElementById("y2Readout");
+		const dualStubReadoutEl = document.getElementById("dualStubReadout");
+		const chartLegendEl = document.getElementById("chartLegend");
+		const legendZlEl = document.getElementById("legend-zl");
+		const legendYlEl = document.getElementById("legend-yl");
+		const legendZ1El = document.getElementById("legend-z1");
+		const legendY2El = document.getElementById("legend-y2");
+		const legendY2pEl = document.getElementById("legend-y2p");
+		const legendYlpEl = document.getElementById("legend-ylp");
+		const legendY3El = document.getElementById("legend-y3");
+		const legendY4El = document.getElementById("legend-y4");
+		const zlReInput = document.getElementById("zlReInput");
+		const zlImInput = document.getElementById("zlImInput");
+		const rotateBasePoint = document.getElementById("rotateBasePoint");
+		const rotateDirection = document.getElementById("rotateDirection");
+		const lambdaInput = document.getElementById("lambdaInput");
+		const calcY2Btn = document.getElementById("calcY2Btn");
+		const d1Input = document.getElementById("d1Input");
+		const d2Input = document.getElementById("d2Input");
+		const y3WalkDirection = document.getElementById("y3WalkDirection");
+		const solveDualStubBtn = document.getElementById("solveDualStubBtn");
+		const downloadChartBtn = document.getElementById("downloadChartBtn");
+
+		const NS = "http://www.w3.org/2000/svg";
+		const cx = 500;
+		const cy = 500;
+		const R = 430;
+
+		const state = {
+			zLoad: { re: 0.6, im: 0.4 },
+			gammaLoad: null,
+			gammaRot: null,
+			y2Points: [],
+			showR1Circle: false,
+			dual: null
+		};
+
+		function fmt(n, d = 4) {
+			if (Number.isNaN(n)) return "NaN";
+			if (n === Infinity) return "∞";
+			if (n === -Infinity) return "-∞";
+			if (!Number.isFinite(n)) return "NaN";
+			const v = Math.abs(n) < 1e-12 ? 0 : n;
+			return v.toFixed(d);
+		}
+
+		function complex(re, im) {
+			return { re, im };
+		}
+
+		function add(a, b) { return complex(a.re + b.re, a.im + b.im); }
+		function sub(a, b) { return complex(a.re - b.re, a.im - b.im); }
+		function mul(a, b) { return complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re); }
+		function div(a, b) {
+			const den = b.re * b.re + b.im * b.im;
+			return complex((a.re * b.re + a.im * b.im) / den, (a.im * b.re - a.re * b.im) / den);
+		}
+		function mag(a) { return Math.hypot(a.re, a.im); }
+		function angle(a) { return Math.atan2(a.im, a.re); }
+
+		function normalizeAngle(a) {
+			let t = a % (2 * Math.PI);
+			if (t < 0) t += 2 * Math.PI;
+			return t;
+		}
+
+		function ccwTravelWavelength(fromGamma, toGamma) {
+			const dAng = normalizeAngle(angle(toGamma) - angle(fromGamma));
+			return dAng / (4 * Math.PI);
+		}
+
+		function wavelengthPairFromGammaForQuickRead(g) {
+			const a = angle(g);
+			const towardGenerator = normalizeAngle(Math.PI - a) / (4 * Math.PI);
+			const towardLoad = 0.5 - towardGenerator;
+			return { towardGenerator, towardLoad };
+		}
+
+		function gammaFromZ(z) {
+			return div(sub(z, complex(1, 0)), add(z, complex(1, 0)));
+		}
+
+		function zFromGamma(g) {
+			return div(add(complex(1, 0), g), sub(complex(1, 0), g));
+		}
+
+		function yFromGamma(g) {
+			return div(sub(complex(1, 0), g), add(complex(1, 0), g));
+		}
+
+		function gammaFromY(y) {
+			return div(sub(complex(1, 0), y), add(complex(1, 0), y));
+		}
+
+		function gammaDisplayFromY(y) {
+			const g = gammaFromY(y);
+			return complex(-g.re, -g.im);
+		}
+
+		function rotateClockwise(g, lambda) {
+			const theta = 4 * Math.PI * lambda;
+			const rot = complex(Math.cos(theta), -Math.sin(theta));
+			return mul(g, rot);
+		}
+
+		function rotateCounterClockwise(g, lambda) {
+			const theta = 4 * Math.PI * lambda;
+			const rot = complex(Math.cos(theta), Math.sin(theta));
+			return mul(g, rot);
+		}
+
+		function gammaToScreen(g) {
+			return { x: cx + g.re * R, y: cy - g.im * R };
+		}
+
+		function drawArcFromOriginClockwise(gStart, lambda, color) {
+			const rho = mag(gStart);
+			if (rho < 1e-12) return;
+			const theta = 4 * Math.PI * (lambda % 0.5);
+			if (theta < 1e-12) return;
+			const a0 = angle(gStart);
+			const steps = Math.max(24, Math.ceil(theta / (Math.PI / 36)));
+			const pts = [];
+			for (let i = 0; i <= steps; i += 1) {
+				const t = i / steps;
+				const a = a0 - theta * t;
+				const g = complex(rho * Math.cos(a), rho * Math.sin(a));
+				pts.push(gammaToScreen(g));
+			}
+			const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" ");
+			svg.appendChild(create("path", {
+				d,
+				fill: "none",
+				stroke: color,
+				"stroke-width": 2,
+				"stroke-dasharray": "4 4"
+			}));
+		}
+
+		function drawArcOnCircle(center, radius, startPoint, endPoint, ccw, color) {
+			if (radius < 1e-12) return;
+			const a0 = Math.atan2(startPoint.im - center.im, startPoint.re - center.re);
+			const a1 = Math.atan2(endPoint.im - center.im, endPoint.re - center.re);
+			const delta = ccw ? normalizeAngle(a1 - a0) : normalizeAngle(a0 - a1);
+			if (delta < 1e-12) return;
+			const steps = Math.max(24, Math.ceil(delta / (Math.PI / 36)));
+			const pts = [];
+			for (let i = 0; i <= steps; i += 1) {
+				const t = i / steps;
+				const a = ccw ? (a0 + delta * t) : (a0 - delta * t);
+				const g = complex(center.re + radius * Math.cos(a), center.im + radius * Math.sin(a));
+				pts.push(gammaToScreen(g));
+			}
+			const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" ");
+			svg.appendChild(create("path", {
+				d,
+				fill: "none",
+				stroke: color,
+				"stroke-width": 2,
+				"stroke-dasharray": "4 4"
+			}));
+		}
+
+		function create(tag, attrs = {}) {
+			const el = document.createElementNS(NS, tag);
+			for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+			return el;
+		}
+
+		function getZlFromInputs() {
+			const re = Number(zlReInput.value);
+			const im = Number(zlImInput.value);
+			if (!Number.isFinite(re) || !Number.isFinite(im)) return null;
+			return complex(re, im);
+		}
+
+		function drawBase() {
+			svg.innerHTML = "";
+
+			svg.appendChild(create("circle", {
+				cx, cy, r: R,
+				fill: "none",
+				stroke: "#a3b6d3",
+				"stroke-width": 2
+			}));
+
+			svg.appendChild(create("line", {
+				x1: cx - R,
+				y1: cy,
+				x2: cx + R,
+				y2: cy,
+				stroke: "#c4d1e6",
+				"stroke-width": 1
+			}));
+
+			svg.appendChild(create("line", {
+				x1: cx,
+				y1: cy - R,
+				x2: cx,
+				y2: cy + R,
+				stroke: "#e2e8f6",
+				"stroke-width": 1,
+				"stroke-dasharray": "4 6"
+			}));
+
+			if (state.dual) {
+				const c = gammaToScreen(complex(0, 0.5));
+				svg.appendChild(create("circle", {
+					cx: c.x,
+					cy: c.y,
+					r: 0.5 * R,
+					fill: "none",
+					stroke: "var(--aux)",
+					"stroke-width": 2,
+					"stroke-dasharray": "7 5"
+				}));
+			}
+		}
+
+		function drawPoint(g, color, label) {
+			const p = gammaToScreen(g);
+			svg.appendChild(create("circle", {
+				cx: p.x,
+				cy: p.y,
+				r: 6,
+				fill: color,
+				stroke: "white",
+				"stroke-width": 1.5
+			}));
+			const t = create("text", {
+				x: p.x + 8,
+				y: p.y - 8,
+				fill: color,
+				"font-size": 14,
+				"font-weight": 700
+			});
+			t.textContent = label;
+			svg.appendChild(t);
+		}
+
+		function drawRhoCircle(g) {
+			const rho = mag(g);
+			svg.appendChild(create("circle", {
+				cx,
+				cy,
+				r: rho * R,
+				fill: "none",
+				stroke: "#607da7",
+				"stroke-width": 1.6,
+				"stroke-dasharray": "6 4"
+			}));
+		}
+
+		function drawRayToUnitCircle(g, color = "#7b8aa2") {
+			const m = mag(g);
+			if (m < 1e-12) return;
+			const unit = complex(g.re / m, g.im / m);
+			const p = gammaToScreen(unit);
+			svg.appendChild(create("line", {
+				x1: cx,
+				y1: cy,
+				x2: p.x,
+				y2: p.y,
+				stroke: color,
+				"stroke-width": 1.4,
+				"stroke-dasharray": "5 5"
+			}));
+		}
+
+		function drawFixedRCircle(r, color, dash = "5 4") {
+			const center = r / (1 + r);
+			const radius = 1 / (1 + r);
+			const c = gammaToScreen(complex(center, 0));
+			svg.appendChild(create("circle", {
+				cx: c.x,
+				cy: c.y,
+				r: radius * R,
+				fill: "none",
+				stroke: color,
+				"stroke-width": 1.8,
+				"stroke-dasharray": dash
+			}));
+		}
+
+		function circleIntersections(c0, c1) {
+			const dx = c1.x - c0.x;
+			const dy = c1.y - c0.y;
+			const d = Math.hypot(dx, dy);
+			if (d > c0.r + c1.r + 1e-12) return [];
+			if (d < Math.abs(c0.r - c1.r) - 1e-12) return [];
+			if (d === 0 && Math.abs(c0.r - c1.r) < 1e-12) return [];
+			const a = (c0.r * c0.r - c1.r * c1.r + d * d) / (2 * d);
+			const h2 = c0.r * c0.r - a * a;
+			if (h2 < -1e-12) return [];
+			const h = Math.sqrt(Math.max(0, h2));
+			const x2 = c0.x + (a * dx) / d;
+			const y2 = c0.y + (a * dy) / d;
+			const rx = -dy * (h / d);
+			const ry = dx * (h / d);
+			const p1 = { x: x2 + rx, y: y2 + ry };
+			const p2 = { x: x2 - rx, y: y2 - ry };
+			if (Math.hypot(p1.x - p2.x, p1.y - p2.y) < 1e-10) return [p1];
+			return [p1, p2];
+		}
+
+		function strongNum(v, d = 4) {
+			return `<strong>${fmt(v, d)}</strong>`;
+		}
+
+		function formatComplexBold(c) {
+			const sign = c.im >= 0 ? "+" : "-";
+			return `${strongNum(c.re)} ${sign} j${strongNum(Math.abs(c.im))}`;
+		}
+
+		function setLegendItem(el, visible) {
+			el.style.display = visible ? "inline-flex" : "none";
+		}
+
+		function updateLegend() {
+			const hasZlYl = Boolean(state.gammaLoad);
+			const hasZ1 = Boolean(state.gammaRot);
+			const hasY2 = state.showR1Circle && state.y2Points.length >= 1;
+			const hasY2p = state.showR1Circle && state.y2Points.length >= 2;
+			const hasDual = Boolean(state.dual);
+
+			setLegendItem(legendZlEl, hasZlYl);
+			setLegendItem(legendYlEl, hasZlYl);
+			setLegendItem(legendZ1El, hasZ1);
+			setLegendItem(legendY2El, hasY2);
+			setLegendItem(legendY2pEl, hasY2p);
+			setLegendItem(legendYlpEl, hasDual);
+			setLegendItem(legendY3El, hasDual);
+			setLegendItem(legendY4El, hasDual);
+
+			const hasAny = hasZlYl || hasZ1 || hasY2 || hasY2p || hasDual;
+			chartLegendEl.style.display = hasAny ? "flex" : "none";
+		}
+
+		function redraw() {
+			drawBase();
+			if (state.gammaLoad) {
+				drawRayToUnitCircle(state.gammaLoad, "#6b7280");
+				drawRayToUnitCircle(complex(-state.gammaLoad.re, -state.gammaLoad.im), "#6b7280");
+				drawRhoCircle(state.gammaLoad);
+				drawPoint(state.gammaLoad, "var(--point-z)", "ZL");
+				drawPoint(complex(-state.gammaLoad.re, -state.gammaLoad.im), "var(--point-y)", "YL");
+			}
+			if (state.gammaRot) drawPoint(state.gammaRot, "var(--point-rot)", "Z1");
+			if (state.showR1Circle) {
+				drawFixedRCircle(1, "#7c3aed", "6 4");
+				state.y2Points.forEach((p, idx) => drawPoint(p, "#7c3aed", idx === 0 ? "Y2" : "Y2'"));
+			}
+
+			if (state.dual) {
+				drawArcFromOriginClockwise(state.dual.ylGamma, state.dual.d1, "#dc2626");
+				drawRayToUnitCircle(state.dual.ylpGamma, "#6b7280");
+				drawPoint(state.dual.ylpGamma, "#6b7280", "YL'");
+				drawArcOnCircle(
+					state.dual.gCircleCenter,
+					state.dual.gCircleRadius,
+					state.dual.ylpGamma,
+					state.dual.y3Gamma,
+					!state.dual.walkClockwise,
+					"#dc2626"
+				);
+				drawArcFromOriginClockwise(state.dual.y3Gamma, 0.125, "#dc2626");
+				drawFixedRCircle(1, "#f97316", "3 4");
+				drawPoint(state.dual.y3Gamma, "#c2410c", "Y3");
+				drawPoint(state.dual.y4Gamma, "#f97316", "Y4");
+			}
+
+			updateLegend();
+		}
+
+		function setStatus(msg, error = false) {
+			statusEl.textContent = msg;
+			statusEl.style.background = error ? "#fff1f2" : "#edf4ff";
+			statusEl.style.borderColor = error ? "#fecdd3" : "#bfd2ff";
+			statusEl.style.color = error ? "#9f1239" : "#1e3a8a";
+		}
+
+		function onSetZL() {
+			const z = getZlFromInputs();
+			if (!z) {
+				setStatus("ZL 输入无效，请分别输入实部与虚部。", true);
+				axisRReadoutEl.textContent = "ZL 无效，无法计算横轴交点对应的 r。";
+				return;
+			}
+			const g = gammaFromZ(z);
+			if (!Number.isFinite(g.re) || !Number.isFinite(g.im) || mag(g) > 1 + 1e-9) {
+				setStatus("该阻抗映射点超出单位圆，请检查输入（现支持 |Γ|<=1）。", true);
+				axisRReadoutEl.textContent = "该点超出单位圆，无法计算横轴交点对应的 r。";
+				return;
+			}
+
+			state.zLoad = z;
+			state.gammaLoad = g;
+			state.gammaRot = null;
+			state.y2Points = [];
+			state.showR1Circle = false;
+			state.dual = null;
+
+			const y = div(complex(1, 0), z);
+			const pairZ = wavelengthPairFromGammaForQuickRead(g);
+			const pairY = wavelengthPairFromGammaForQuickRead(complex(-g.re, -g.im));
+			setStatus("已设置 ZL，已标注 ZL、YL 及等反射系数圆，并完成波长读数。");
+
+			readoutEl.innerHTML = [
+				"ZL 点读数",
+				`ZL = ${formatComplexBold(z)}`,
+				`向电源波长数 = ${strongNum(pairZ.towardGenerator, 3)}，向负载波长数 = ${strongNum(pairZ.towardLoad, 3)}`,
+				"YL 点读数",
+				`YL = ${formatComplexBold(y)}`,
+				`向电源波长数 = ${strongNum(pairY.towardGenerator, 3)}，向负载波长数 = ${strongNum(pairY.towardLoad, 3)}`
+			].join("<br>");
+
+			const rho = mag(g);
+			const rLeft = (1 - rho) / (1 + rho);
+			const rRight = rLeft === 0 ? Infinity : 1 / rLeft;
+			axisRReadoutEl.innerHTML = [
+				`左右交点读数分别为r=${strongNum(rLeft, 4)}和r=${strongNum(rRight, 4)}。`,
+				"提示：对于阻抗圆图左k右VSWR，对于导纳圆图左VSWR右k。"
+			].join("<br>");
+			rotateReadoutEl.textContent = "第二功能的 Z1/Y1 结果将在此显示。";
+			y2ReadoutEl.textContent = "第三功能的 Y2/Y2' 结果将在此显示。";
+			dualStubReadoutEl.textContent = "第四功能的双支节求解结果将在此显示。";
+
+			redraw();
+		}
+
+		function onRotate() {
+			if (!state.gammaLoad) {
+				setStatus("请先设置 ZL。", true);
+				return;
+			}
+			const lam = Number(lambdaInput.value);
+			if (!Number.isFinite(lam) || lam < 0) {
+				setStatus("请输入非负波长数。", true);
+				return;
+			}
+			const baseIsYL = rotateBasePoint.value === "YL";
+			const baseGamma = baseIsYL ? complex(-state.gammaLoad.re, -state.gammaLoad.im) : state.gammaLoad;
+			const towardLoad = rotateDirection.value === "towardLoad";
+			state.gammaRot = towardLoad ? rotateCounterClockwise(baseGamma, lam) : rotateClockwise(baseGamma, lam);
+			const pair = wavelengthPairFromGammaForQuickRead(state.gammaRot);
+			const zNew = zFromGamma(state.gammaRot);
+			const yNew = zFromGamma(state.gammaRot);
+			setStatus("已完成旋转并标注。", false);
+			if (baseIsYL) {
+				rotateReadoutEl.innerHTML = [
+					"Y1 读数",
+					`Y1 = ${formatComplexBold(yNew)}`,
+					`Y1 向电源波长数 = ${strongNum(pair.towardGenerator, 3)}，Y1 向负载波长数 = ${strongNum(pair.towardLoad, 3)}`
+				].join("<br>");
+			} else {
+				rotateReadoutEl.innerHTML = [
+					"Z1 读数",
+					`Z1 = ${formatComplexBold(zNew)}`,
+					`Z1 向电源波长数 = ${strongNum(pair.towardGenerator, 3)}，Z1 向负载波长数 = ${strongNum(pair.towardLoad, 3)}`
+				].join("<br>");
+			}
+			redraw();
+		}
+
+		function onCalcY2() {
+			if (!state.gammaLoad) {
+				setStatus("请先完成第一功能，设置 ZL。", true);
+				return;
+			}
+			const rho = mag(state.gammaLoad);
+			const points = circleIntersections({ x: 0, y: 0, r: rho }, { x: 0.5, y: 0, r: 0.5 })
+				.filter((p) => Math.hypot(p.x, p.y) <= 1 + 1e-9)
+				.map((p) => complex(p.x, p.y));
+
+			if (points.length === 0) {
+				setStatus("等反射系数圆与 r=1 圆无交点。", true);
+				y2ReadoutEl.textContent = "等反射系数圆与 r=1 圆无交点。";
+				state.y2Points = [];
+				state.showR1Circle = false;
+				redraw();
+				return;
+			}
+
+			points.sort((a, b) => b.im - a.im);
+			state.y2Points = points;
+			state.showR1Circle = true;
+
+			const y2Gamma = points[0];
+			const y2pGamma = points[1];
+			const y2 = zFromGamma(y2Gamma);
+			const y2p = zFromGamma(y2pGamma);
+			const pairY2 = wavelengthPairFromGammaForQuickRead(y2Gamma);
+			const pairY2p = wavelengthPairFromGammaForQuickRead(y2pGamma);
+			const bAbs = Math.abs(y2.im);
+
+			const ylGamma = complex(-state.gammaLoad.re, -state.gammaLoad.im);
+			const pairYL = wavelengthPairFromGammaForQuickRead(ylGamma);
+			const dRaw = pairY2.towardGenerator - pairYL.towardGenerator;
+			const dpRaw = pairY2p.towardGenerator - pairYL.towardGenerator;
+			const d = dRaw < 0 ? dRaw + 0.5 : dRaw;
+			const dp = dpRaw < 0 ? dpRaw + 0.5 : dpRaw;
+
+			const pairPlusB = wavelengthPairFromGammaForQuickRead(gammaDisplayFromY(complex(0, bAbs)));
+			const pairMinusB = wavelengthPairFromGammaForQuickRead(gammaDisplayFromY(complex(0, -bAbs)));
+			const l = pairPlusB.towardGenerator > 0.25 ? pairPlusB.towardGenerator - 0.25 : pairPlusB.towardGenerator + 0.25;
+			const lp = pairMinusB.towardGenerator > 0.25 ? pairMinusB.towardGenerator - 0.25 : pairMinusB.towardGenerator + 0.25;
+
+			const signY2 = y2.im >= 0 ? "+" : "-";
+			const signY2p = y2p.im >= 0 ? "+" : "-";
+			const lines = [
+				"Y2/Y2' 读数",
+				`Y2 = <strong>1.0000</strong> ${signY2} j${strongNum(Math.abs(y2.im), 4)}，向电源波长数${strongNum(pairY2.towardGenerator, 3)}`,
+				`Y2' = <strong>1.0000</strong> ${signY2p} j${strongNum(Math.abs(y2p.im), 4)}，向电源波长数${strongNum(pairY2p.towardGenerator, 3)}`,
+				`<u>支节位置求得d=${strongNum(d, 3)}，d'=${strongNum(dp, 3)}</u>`,
+				`短路支节归一化输入电纳为+j${strongNum(bAbs, 4)}和-j${strongNum(bAbs, 4)}，对应向电源的波长数${strongNum(pairPlusB.towardGenerator, 3)}和${strongNum(pairMinusB.towardGenerator, 3)}；`,
+				`<u>短路支节长度l=${strongNum(l, 3)}，l'=${strongNum(lp, 3)}。</u>（自行取短的一个）`
+			];
+			y2ReadoutEl.innerHTML = lines.join("<br>");
+			setStatus("已完成双支节求解。", false);
+			redraw();
+		}
+
+		function onSolveDualStub() {
+			if (!state.gammaLoad) {
+				setStatus("请先完成第一功能，得到 YL。", true);
+				return;
+			}
+
+			const d1 = Number(d1Input.value);
+			const d2 = Number(d2Input.value);
+			if (!Number.isFinite(d1) || d1 < 0 || !Number.isFinite(d2) || d2 < 0) {
+				setStatus("d1 和 d2 都需要是非负数。", true);
+				return;
+			}
+
+			const ylGamma = complex(-state.gammaLoad.re, -state.gammaLoad.im);
+			const ylpGamma = rotateClockwise(ylGamma, d1);
+			const ylp = zFromGamma(ylpGamma);
+			const pairYlp = wavelengthPairFromGammaForQuickRead(ylpGamma);
+			const g = ylp.re;
+
+			const gCircle = { x: g / (1 + g), y: 0, r: 1 / (1 + g) };
+			const auxCircle = { x: 0, y: 0.5, r: 0.5 };
+			const candidates = circleIntersections(gCircle, auxCircle)
+				.filter((p) => Math.hypot(p.x, p.y) <= 1 + 1e-9)
+				.map((p) => complex(p.x, p.y));
+
+			if (candidates.length === 0) {
+				state.dual = null;
+				dualStubReadoutEl.innerHTML = [
+					"双支节求解",
+					`YL' = ${formatComplexBold(ylp)}`,
+					`YL' 向电源波长数 = ${strongNum(pairYlp.towardGenerator, 3)}`,
+					"禁区无交点"
+				].join("<br>");
+				setStatus("双支节求解：等电导圆与辅助圆无交点（禁区无交点）。", true);
+				redraw();
+				return;
+			}
+
+			const c = complex(gCircle.x, gCircle.y);
+			const aStart = Math.atan2(ylpGamma.im - c.im, ylpGamma.re - c.re);
+			const ccwDelta = (p) => normalizeAngle(Math.atan2(p.im - c.im, p.re - c.re) - aStart);
+			const cwDelta = (p) => normalizeAngle(aStart - Math.atan2(p.im - c.im, p.re - c.re));
+			const walkClockwise = y3WalkDirection.value === "cw";
+			candidates.sort((a, b) => {
+				const da = walkClockwise ? cwDelta(a) : ccwDelta(a);
+				const db = walkClockwise ? cwDelta(b) : ccwDelta(b);
+				return da - db;
+			});
+			const y3Gamma = candidates[0];
+			const y3 = zFromGamma(y3Gamma);
+			const pairY3 = wavelengthPairFromGammaForQuickRead(y3Gamma);
+			const y4Gamma = rotateClockwise(y3Gamma, 0.125);
+			const y4 = zFromGamma(y4Gamma);
+			const pairY4 = wavelengthPairFromGammaForQuickRead(y4Gamma);
+
+			const b1 = y3.im - ylp.im;
+			const pairB1 = wavelengthPairFromGammaForQuickRead(gammaDisplayFromY(complex(0, b1)));
+			const l1 = pairB1.towardGenerator > 0.25
+				? pairB1.towardGenerator - 0.25
+				: pairB1.towardGenerator + 0.25;
+
+			const b2 = -y4.im;
+			const pairB2 = wavelengthPairFromGammaForQuickRead(gammaDisplayFromY(complex(0, b2)));
+			const l2 = pairB2.towardGenerator > 0.25
+				? pairB2.towardGenerator - 0.25
+				: pairB2.towardGenerator + 0.25;
+
+			state.dual = {
+				ylGamma,
+				ylpGamma,
+				y3Gamma,
+				y4Gamma,
+				walkClockwise,
+				g,
+				d1,
+				d2,
+				gCircleCenter: c,
+				gCircleRadius: gCircle.r
+			};
+
+			dualStubReadoutEl.innerHTML = [
+				"双支节求解",
+				`YL' = ${formatComplexBold(ylp)}`,
+				`YL' 向电源波长数 = ${strongNum(pairYlp.towardGenerator, 3)}`,
+				`Y3 = ${formatComplexBold(y3)}`,
+				`Y3 向电源波长数 = ${strongNum(pairY3.towardGenerator, 3)}`,
+				`<u>第一支节jb1的b1=${strongNum(b1, 4)}，对应波长数为${strongNum(pairB1.towardGenerator, 3)}，支节长度l1=${strongNum(l1, 3)}</u>`,
+				`Y4 = ${formatComplexBold(y4)}`,
+				`Y4 向电源波长数 = ${strongNum(pairY4.towardGenerator, 3)}`,
+				`<u>第二支节jb2的b2=${strongNum(b2, 4)}，对应波长数为${strongNum(pairB2.towardGenerator, 3)}，支节长度l2=${strongNum(l2, 3)}</u>`,
+			].join("<br>");
+
+			setStatus(`已完成双支节求解。`, false);
+			redraw();
+		}
+
+		function onDownloadChart() {
+			try {
+				const serializer = new XMLSerializer();
+				const svgString = serializer.serializeToString(svg);
+				const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+				const url = URL.createObjectURL(blob);
+				const img = new Image();
+				img.onload = () => {
+					const scale = 2;
+					const w = 1000;
+					const h = 1000;
+					const canvas = document.createElement("canvas");
+					canvas.width = w * scale;
+					canvas.height = h * scale;
+					const ctx = canvas.getContext("2d");
+					ctx.setTransform(scale, 0, 0, scale, 0, 0);
+					ctx.fillStyle = "#ffffff";
+					ctx.fillRect(0, 0, w, h);
+					ctx.drawImage(img, 0, 0, w, h);
+
+					const pngUrl = canvas.toDataURL("image/png");
+					const a = document.createElement("a");
+					a.href = pngUrl;
+					a.download = `smith-chart-${Date.now()}.png`;
+					document.body.appendChild(a);
+					a.click();
+					a.remove();
+
+					URL.revokeObjectURL(url);
+					setStatus("图片下载已开始。", false);
+				};
+				img.onerror = () => {
+					URL.revokeObjectURL(url);
+					setStatus("图片导出失败，请重试。", true);
+				};
+				img.src = url;
+			} catch (e) {
+				setStatus("图片导出失败，请重试。", true);
+			}
+		}
+
+		document.getElementById("setZlBtn").addEventListener("click", onSetZL);
+		document.getElementById("rotateBtn").addEventListener("click", onRotate);
+		calcY2Btn.addEventListener("click", onCalcY2);
+		solveDualStubBtn.addEventListener("click", onSolveDualStub);
+		downloadChartBtn.addEventListener("click", onDownloadChart);
+
+		redraw();
+	</script>
+</body>
+</html>
