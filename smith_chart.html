@@ -300,7 +300,7 @@
 			<div id="rotateReadout" class="readout">第二功能的 Z1/Y1 结果将在此显示。</div>
 
 			<fieldset>
-				<legend>3)单支节求解：作等Γ圆与g=1圆交点Y2/Y2'</legend>
+				<legend>3)单支节求解：求解Y2/Y2'并将支节位置和长度直接求出</legend>
 				<button id="calcY2Btn" class="secondary">计算并标注 Y2, Y2'</button>
 			</fieldset>
 			<div id="y2Readout" class="readout">第三功能的 Y2/Y2' 结果将在此显示。</div>
@@ -309,11 +309,11 @@
 				<legend>4) 双支节求解：求解YL', Y3, Y4和支节长度</legend>
 				<div class="row">
 					<label>
-						第一枝节距离 d1（波长）
+						第一支节距离 d1
 						<input id="d1Input" type="number" min="0" step="0.001" value="0.125" />
 					</label>
 					<label>
-						第二枝节距离 d2（波长）
+						第二支节距离 d2
 						<input id="d2Input" type="number" min="0" step="0.001" value="0.125" />
 					</label>
 				</div>
@@ -324,7 +324,6 @@
 						<option value="cw">顺时针</option>
 					</select>
 				</label>
-				<label class="sub">辅助圆固定为 x^2 + (y - 0.5)^2 = 0.5^2</label>
 				<button id="solveDualStubBtn" class="warn">计算并标注YL', Y3, Y4</button>
 			</fieldset>
 			<div id="dualStubReadout" class="readout">第四功能的双支节求解结果将在此显示。</div>
@@ -333,7 +332,7 @@
 		</aside>
 
 		<section class="chart-card">
-			<button id="downloadChartBtn" class="secondary download-btn-floating">下载图片（PNG）</button>
+			<button id="downloadChartBtn" class="secondary download-btn-floating">保存图片</button>
 			<svg id="chart" viewBox="0 0 1000 1000" aria-label="Smith chart"></svg>
 			<div class="legend" id="chartLegend" style="display:none;">
 				<span id="legend-zl"><i class="dot" style="background: var(--point-z);"></i>ZL 点</span>
@@ -911,7 +910,7 @@
 					`YL' 向电源波长数 = ${strongNum(pairYlp.towardGenerator, 3)}`,
 					"禁区无交点"
 				].join("<br>");
-				setStatus("双支节求解：等电导圆与辅助圆无交点（禁区无交点）。", true);
+				setStatus("双支节求解错误：等电导圆与辅助圆无交点，该情况下支节长度为0。", true);
 				redraw();
 				return;
 			}
