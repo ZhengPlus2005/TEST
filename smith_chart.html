@@ -775,8 +775,7 @@
 			const rLeft = (1 - rho) / (1 + rho);
 			const rRight = rLeft === 0 ? Infinity : 1 / rLeft;
 			axisRReadoutEl.innerHTML = [
-				`左右交点读数分别为r=${strongNum(rLeft, 4)}和r=${strongNum(rRight, 4)}。`,
-				"提示：对于阻抗圆图左k右VSWR，对于导纳圆图左VSWR右k。"
+				`左右交点读数分别为k=${strongNum(rLeft, 4)}和VSWR=${strongNum(rRight, 4)}。`
 			].join("<br>");
 			rotateReadoutEl.textContent = "第二功能的 Z1/Y1 结果将在此显示。";
 			y2ReadoutEl.textContent = "第三功能的 Y2/Y2' 结果将在此显示。";
