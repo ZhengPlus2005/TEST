@@ -15,6 +15,8 @@
     </script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/common.min.js"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         body {
@@ -23,36 +25,326 @@
             padding: 20px;
             max-width: 800px;
             margin: 0 auto;
+            color: #1f2328;
         }
+
         textarea {
             width: 100%;
             height: 200px;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+            padding: 12px 14px;
+            border: 1px solid #d0d7de;
+            border-radius: 10px;
+            outline: none;
+            resize: vertical;
+            background: #ffffff;
+            color: #1f2328;
+            font: 14px/1.6 Consolas, Monaco, "Courier New", monospace;
+            box-shadow: inset 0 1px 2px rgba(27, 31, 36, 0.04);
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        textarea:focus {
+            border-color: #0969da;
+            box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.16);
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
             margin-bottom: 20px;
+        }
+
+        button {
+            border: 1px solid #d0d7de;
+            border-radius: 7px;
+            padding: 7px 13px;
+            background: #f6f8fa;
+            color: #24292f;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1.2;
+            transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+        }
+
+        button:hover {
+            background: #eef1f4;
+            border-color: #afb8c1;
+        }
+
+        button:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.18);
+        }
+
+        .primary-button {
+            border-color: #0969da;
+            background: #0969da;
+            color: #ffffff;
+        }
+
+        .primary-button:hover {
+            border-color: #0757b3;
+            background: #0757b3;
+        }
+
+        code:not(pre code) {
+            padding: 0.15em 0.35em;
+            border-radius: 6px;
+            background: #eef0f3;
+            color: #24292f;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            font-size: 0.92em;
+        }
+
+        .code-block {
+            overflow: hidden;
+            margin: 16px 0;
+            border: 1px solid #d8dee4;
+            border-radius: 8px;
+            background: #f6f8fa;
+        }
+
+        .code-block-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 7px 10px;
+            border-bottom: 1px solid #d8dee4;
+            background: #f6f8fa;
+            color: #57606a;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+
+        .code-language {
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .copy-code-button {
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 4px 9px;
+            background: #ffffff;
+            color: #24292f;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .copy-code-button:hover {
+            background: #f3f4f6;
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 14px 16px;
+            overflow-x: auto;
+            background: #ffffff;
+        }
+
+        .code-block pre code {
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            font-size: 14px;
+            line-height: 1.55;
+            background: transparent;
         }
     </style>
 </head>
 <body>
     <h1>公式渲染</h1>
-    <textarea id="input" placeholder="在此输入文本和LaTeX公式..."></textarea>
-    <button onclick="renderMath()">渲染公式</button>
+    <textarea id="input" placeholder="在此输入 Markdown 和 LaTeX 公式..."></textarea>
+    <div class="toolbar">
+        <button class="primary-button" onclick="renderMath()">渲染公式</button>
+        <button onclick="pasteFromClipboard()">粘贴</button>
+        <button onclick="clearInput()">清除</button>
+    </div>
     <div id="output"></div>
 
     <script>
-        function renderMath() {
-            var input = document.getElementById('input').value;
-            var output = document.getElementById('output');
+        const latexCommands = [
+            'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'varepsilon', 'zeta', 'eta', 'theta',
+            'vartheta', 'iota', 'kappa', 'lambda', 'mu', 'nu', 'xi', 'pi', 'rho', 'sigma',
+            'tau', 'upsilon', 'phi', 'varphi', 'chi', 'psi', 'omega',
+            'Gamma', 'Delta', 'Theta', 'Lambda', 'Xi', 'Pi', 'Sigma', 'Upsilon', 'Phi', 'Psi', 'Omega',
+            'mathbf', 'mathrm', 'mathit', 'mathcal', 'mathbb', 'mathsf', 'mathtt', 'text',
+            'frac', 'sqrt', 'sum', 'prod', 'int', 'lim', 'sin', 'cos', 'tan', 'log', 'ln', 'exp',
+            'left', 'right', 'leq', 'geq', 'neq', 'approx', 'cdot', 'times', 'pm', 'mp',
+            'infty', 'partial', 'nabla', 'to', 'rightarrow', 'leftarrow', 'Rightarrow', 'Leftarrow',
+            'begin', 'end'
+        ];
 
-            // 先将 Markdown 转成 HTML，保留标题、段落等结构
-            var html = marked.parse(input, { gfm: true, breaks: true });
-            output.innerHTML = html;
+        const latexCommandPattern = new RegExp('(^|[^\\\\A-Za-z])(' + latexCommands.join('|') + ')(?=\\b)', 'g');
 
-            // 重复渲染时先清理上一次的 MathJax 状态，再进行排版
+        function looksLikeLatex(text) {
+            return /\\[A-Za-z]+|[_^{}]|[A-Za-z]\s*\[[^\]]+\]|e\^\{|[=<>]|begin\{/.test(text);
+        }
+
+        function restoreMissingBackslashes(math) {
+            return math
+                .replace(latexCommandPattern, '$1\\$2')
+                .replace(/([A-Za-z])omega\b/g, '$1\\omega')
+                .replace(/\\\\(begin|end)\s*\{/g, '\\$1{')
+                .replace(/\\\\(left|right)(?=[|()[\]{}])/g, '\\$1');
+        }
+
+        function normalizeMarkdownTableArtifacts(math) {
+            return math
+                .split('\n')
+                .map((line) => {
+                    const trimmed = line.trim();
+                    if (/^={3,}$/.test(trimmed)) {
+                        return '';
+                    }
+
+                    if (/^#+\s+/.test(trimmed)) {
+                        return line.replace(/^(\s*)#+\s+/, '$1');
+                    }
+
+                    if (/^\|\s*:?-{3,}:?\s*\|$/.test(trimmed)) {
+                        return '';
+                    }
+
+                    const singleCell = trimmed.match(/^\|\s*(.+?)\s*\|$/);
+                    if (singleCell) {
+                        return `\\left| ${singleCell[1]} \\right|`;
+                    }
+
+                    return line;
+                })
+                .filter((line) => line.trim() !== '')
+                .join('\n');
+        }
+
+        function normalizeMathContent(math) {
+            return restoreMissingBackslashes(normalizeMarkdownTableArtifacts(math.trim()))
+                .replace(/\\\s*\n/g, '\\\\\n');
+        }
+
+        function protectMathBlocks(input) {
+            const mathBlocks = [];
+            const stash = (content, display) => {
+                const normalized = normalizeMathContent(content);
+                const token = `@@MATH_${mathBlocks.length}@@`;
+                mathBlocks.push(display ? `\\[${normalized}\\]` : `\\(${normalized}\\)`);
+                return token;
+            };
+
+            let text = input
+                .replace(/\$\$([\s\S]*?)\$\$/g, (_, content) => stash(content, true))
+                .replace(/(^|[^\\$])\$(?!\$)([\s\S]*?)([^\\$])\$(?!\$)/g, (match, prefix, content, lastChar) => {
+                    return `${prefix}${stash(content + lastChar, false)}`;
+                })
+                .replace(/\\\[([\s\S]*?)\\\]/g, (_, content) => stash(content, true))
+                .replace(/\\\(([\s\S]*?)\\\)/g, (_, content) => stash(content, false));
+
+            // ChatGPT sometimes emits display math as a naked bracket block.
+            text = text.replace(/(^|\n)\s*\[\s*\n([\s\S]*?)\n\s*\]\s*(?=\n|$)/g, (match, prefix, content) => {
+                return looksLikeLatex(content) ? `${prefix}${stash(content, true)}` : match;
+            });
+
+            // ChatGPT may also emit inline math as plain parentheses: (x[n]) or (X(e^{jomega})).
+            text = text.replace(/\(((?:[^()\n]|\([^()\n]{1,120}\)){1,180})\)/g, (match, content) => {
+                return looksLikeLatex(content) ? stash(content, false) : match;
+            });
+
+            return { text, mathBlocks };
+        }
+
+        function restoreProtectedMath(html, mathBlocks) {
+            return html.replace(/@@MATH_(\d+)@@/g, (_, index) => mathBlocks[Number(index)]);
+        }
+
+        async function pasteFromClipboard() {
+            const input = document.getElementById('input');
+            try {
+                const text = await navigator.clipboard.readText();
+                input.value = text;
+                input.focus();
+            } catch (error) {
+                alert('无法读取剪贴板，请检查浏览器权限或使用 Ctrl+V。');
+                input.focus();
+            }
+        }
+
+        function clearInput() {
+            const input = document.getElementById('input');
+            input.value = '';
+            input.focus();
+        }
+
+        function getCodeLanguage(codeElement) {
+            const languageClass = Array.from(codeElement.classList).find((className) => {
+                return className.startsWith('language-');
+            });
+            return languageClass ? languageClass.replace('language-', '') : 'text';
+        }
+
+        function enhanceCodeBlocks(container) {
+            container.querySelectorAll('pre > code').forEach((codeElement) => {
+                const pre = codeElement.parentElement;
+                if (pre.parentElement && pre.parentElement.classList.contains('code-block')) {
+                    return;
+                }
+
+                const language = getCodeLanguage(codeElement);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-block';
+                wrapper.innerHTML = `
+                    <div class="code-block-header">
+                        <span class="code-language">${language}</span>
+                        <button class="copy-code-button" type="button">复制</button>
+                    </div>
+                `;
+
+                pre.replaceWith(wrapper);
+                wrapper.appendChild(pre);
+
+                const copyButton = wrapper.querySelector('.copy-code-button');
+                copyButton.addEventListener('click', async () => {
+                    const code = codeElement.textContent;
+                    try {
+                        await navigator.clipboard.writeText(code);
+                        copyButton.textContent = '已复制';
+                    } catch (error) {
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(codeElement);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        copyButton.textContent = '已选中';
+                    }
+
+                    setTimeout(() => {
+                        copyButton.textContent = '复制';
+                    }, 1400);
+                });
+
+                if (window.hljs) {
+                    hljs.highlightElement(codeElement);
+                }
+            });
+        }
+
+        async function renderMath() {
+            const input = document.getElementById('input').value;
+            const output = document.getElementById('output');
+            const protectedInput = protectMathBlocks(input);
+
+            // 先保护公式，再渲染 Markdown，避免公式里的 | --- | 被当成表格。
+            const html = marked.parse(protectedInput.text, { gfm: true, breaks: true });
+            output.innerHTML = restoreProtectedMath(html, protectedInput.mathBlocks);
+            enhanceCodeBlocks(output);
+
+            // 重复渲染时先清理上一次的 MathJax 状态，再重新排版。
             if (window.MathJax && window.MathJax.typesetClear) {
                 window.MathJax.typesetClear([output]);
             }
-            MathJax.typesetPromise([output]).then(() => {
-                console.log('Markdown 与公式渲染完成');
-            });
+            await MathJax.typesetPromise([output]);
+            console.log('Markdown 与公式渲染完成');
         }
     </script>
 </body>
